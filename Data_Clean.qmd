@@ -120,4 +120,7 @@ output_dir <- here("Data", "Pisa_clean")
 write_rds(pisa2018_clean, file.path(output_dir, "pisa2018_clean.rds"))
 ```
 
+```{r}
+pisa2015 <- read_sav(here("Data", "Pisa_Raw", "Student2015.sav"))
+```
 
