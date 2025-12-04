@@ -71,12 +71,53 @@ write_rds(pisa2022_clean, file.path(output_dir, "pisa2022_clean.rds"))
 
 ```{r}
 pisa2018 <- read_sav(here("Data", "Pisa_Raw", "Student2018.sav"))
-pisa2015 <- read_sav(here("Data", "Pisa_Raw", "Student2015.sav"))
-pisa2012 <- read_sav(here("Data", "Pisa_Raw", "Student2012.sav"))
-pisa2009 <- read_sav(here("Data", "Pisa_Raw", "Student2009.sav"))
-pisa2006 <- read_sav(here("Data", "Pisa_Raw", "Student2006.sav"))
-pisa2003 <- read_sav(here("Data", "Pisa_Raw", "Student2003.sav"))
 ```
 
+```{r}
+pisa2018_clean <- pisa2018 %>%
+  
+  mutate(year = 2018) %>%
+  mutate(
+    computer_n = as.numeric(ST012Q06NA),
+    
+    gender = as_factor(ST004D01T)
+  ) %>%
+
+  select(
+    year,
+    country = CNT,
+    school_id = CNTSCHID,
+    student_id = CNTSTUID,
+    
+    mother_educ = MISCED,       
+    father_educ = FISCED,       
+    gender,
+    
+    room = ST011Q02TA,          
+    computer = ST011Q04TA,      
+    internet = ST011Q06TA,      
+    desk = ST011Q01TA,  
+    
+    car = ST012Q02TA,           
+    television = ST012Q01TA,    
+    computer_n,                 
+    
+    book = ST013Q01TA,          
+    
+    math = PV1MATH,
+    read = PV1READ,
+    science = PV1SCIE,
+    stu_wgt = W_FSTUWT,
+    
+    wealth = HOMEPOS,           
+    escs = ESCS
+  ) %>%
+  
+  zap_labels()
+
+output_dir <- here("Data", "Pisa_clean")
+
+write_rds(pisa2018_clean, file.path(output_dir, "pisa2018_clean.rds"))
+```
 
 
