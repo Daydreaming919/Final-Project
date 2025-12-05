@@ -1,11 +1,10 @@
 ---
-title: "Final_Project"
+title: "Data_Clean"
 author: "Hao Xu"
 format: html
 ---
 # Data Clean
-The data of Pisa are available only in SAV format, in order to use the data, we need install some libraries so that we can treat with SAV files. The data from 2000-2012 are got
-through SPSS.
+The PISA data is only available in the SAV format. To use this data, we need to install some libraries so we can work with SAV files. The data from 2000 to 2012 was obtained using the SPSS software and the code provided by the official PISA source.
 ```{r}
 library(here)
 library(ggplot2)
@@ -19,7 +18,7 @@ here::i_am("Final_Project.Rproj")
 
 
 ## Pisa 2022
-The basic clean 旨在规范pisa每年数据的命名格式，加入时间项，选出必要的或可能会被使用的列。这些重要数据列的选取我参考了xxx清洗pisa数据的方式，但这些列在后续的研究中不一定会全部被使用
+The basic cleaning aims to standardize the naming format for each year of PISA data, add a time variable, and select the necessary or potentially useful columns. I referred to the way learningtower cleaned the PISA data to choose these important columns, but not all of these columns will necessarily be used in later research.
 ```{r}
 pisa2022 <- read_sav(here("Data", "Pisa_Raw", "Student2022.SAV"))
 ```
@@ -395,8 +394,7 @@ output_dir <- here("Data", "Pisa_clean")
 write_rds(pisa2003_clean, file.path(output_dir, "pisa2003_clean.rds"))
 ```
 
-事实上，pisa最古老的数据是Pisa2000，但pisa2000的格式和之前的数据都有所不同，处理其他会有些复杂，所以我选择忽略2000的数据，只选择使用2003-2022的数据。
-
+Actually, the oldest PISA data is PISA 2000. However, the format of PISA 2000 is different from the later data, and processing it would be a bit complex. So, I chose to ignore the 2000 data and only use the data from 2003 to 2022.
 
 ## Aggregate Pisa
 ```{r}
@@ -409,9 +407,7 @@ pisa_all_years <- map_dfr(files, function(f) {
       school_id = as.character(school_id),
       student_id = as.character(student_id),
       country = as.character(country),
-      
       year = as.integer(year),
-      
       gender = as.character(gender) 
     )
 })
@@ -425,6 +421,19 @@ pisa_aggregated <- pisa_all_years %>%
     read_mean = weighted.mean(read, w = stu_wgt, na.rm = TRUE),
     science_mean = weighted.mean(science, w = stu_wgt, na.rm = TRUE),
     
+    math_sd = sqrt(sum(stu_wgt * (math - weighted.mean(math, stu_wgt, na.rm = TRUE))^2, na.rm = TRUE) / sum(stu_wgt, na.rm = TRUE)),
+    read_sd = sqrt(sum(stu_wgt * (read - weighted.mean(read, stu_wgt, na.rm = TRUE))^2, na.rm = TRUE) / sum(stu_wgt, na.rm = TRUE)),
+    science_sd = sqrt(sum(stu_wgt * (science - weighted.mean(science, stu_wgt, na.rm = TRUE))^2, na.rm = TRUE) / sum(stu_wgt, na.rm = TRUE)),
+    
+    math_low_achievers = weighted.mean(math <= 420, w = stu_wgt, na.rm = TRUE),
+    math_top_performers = weighted.mean(math >= 600, w = stu_wgt, na.rm = TRUE),
+    
+    read_low_achievers = weighted.mean(read <= 407, w = stu_wgt, na.rm = TRUE),
+    read_top_performers = weighted.mean(read >= 625, w = stu_wgt, na.rm = TRUE),
+    
+    cience_low_achievers = weighted.mean(science <= 409, w = stu_wgt, na.rm = TRUE),
+    science_top_performers = weighted.mean(science >= 633, w = stu_wgt, na.rm = TRUE),
+    
     math_female = weighted.mean(math[gender %in% c("Female", "1")], 
                                 w = stu_wgt[gender %in% c("Female", "1")], na.rm = TRUE),
     math_male   = weighted.mean(math[gender %in% c("Male", "2")], 
@@ -437,13 +446,8 @@ pisa_aggregated <- pisa_all_years %>%
 
     escs_mean = weighted.mean(escs, w = stu_wgt, na.rm = TRUE),
     
-    
     .groups = "drop"
-  ) %>%
-  mutate(
-    gap_math = math_male - math_female,
-    gap_read = read_male - read_female
-  )
+  ) 
 
 output_path <- here("Data", "pisa.csv")
 write_csv(pisa_aggregated, output_path)
@@ -452,3 +456,63 @@ write_csv(pisa_aggregated, output_path)
 write_csv(pisa_aggregated, output_path)
 ```
 
+## Add other variables
+```{r}
+library(janitor)
+
+wb_raw <- read_csv(here("Data", "WorldBank.csv"), na = c("..", ""), show_col_types = FALSE)
+
+wb_clean <- wb_raw %>%
+  rename(
+    iso3c = `Country Code`, 
+    series_name = `Series Name`
+  ) %>%
+  pivot_longer(
+    cols = contains("[YR"), 
+    names_to = "year_raw", 
+    values_to = "value"
+  ) %>%
+  mutate(
+    year = as.integer(str_sub(year_raw, 1, 4)),
+    value = as.numeric(value)
+  ) %>%
+  mutate(var_name = case_when(
+    str_detect(series_name, "Individuals using the Internet") ~ "internet",
+    str_detect(series_name, "Urban population") ~ "urban_pop",
+    str_detect(series_name, "Government Effectiveness") ~ "gov_effect",
+    str_detect(series_name, "Gini index") ~ "gini",
+    str_detect(series_name, "Compulsory education") ~ "comp_edu_years",
+    str_detect(series_name, "Current education expenditure") ~ "current_exp_pct",
+    str_detect(series_name, "Government expenditure on education") ~ "edu_exp",
+    str_detect(series_name, "GDP per capita") ~ "gdp_ppp",
+    str_detect(series_name, "School enrollment, preprimary \\(% gross\\)$") ~ "pre_primary_total",
+    str_detect(series_name, "School enrollment, preprimary, female") ~ "pre_primary_female",
+    str_detect(series_name, "School enrollment, preprimary, male") ~ "pre_primary_male",
+    TRUE ~ NA_character_ 
+  )) %>%
+  filter(!is.na(var_name), !is.na(iso3c)) %>%
+  select(iso3c, year, var_name, value) %>%
+  pivot_wider(
+    names_from = var_name, 
+    values_from = value
+  )
+
+pisa_data <- read_csv(here("Data", "pisa.csv"), show_col_types = FALSE) %>%
+  mutate(
+    year = as.integer(year),
+    iso3c = case_when(
+      country == "KSV" ~ "XKX",
+      country == "QAZ" ~ "AZE",
+      country == "QCI" ~ "RUS",
+      country == "QRT" ~ "RUS",
+      country == "QMR" ~ "ESP",
+      TRUE ~ country
+    )
+  )
+
+final_dataset <- pisa_data %>%
+  left_join(wb_clean, by = c("iso3c", "year"))
+
+write_csv(final_dataset, here("Data", "final_merged_dataset.csv"))
+
+```
