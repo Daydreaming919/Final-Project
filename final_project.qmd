@@ -75,7 +75,7 @@ The data provided by PISA is quite complex. To make it more suitable for my proj
 
 For the data before 2012, PISA only provided code files of SPSS and the data in TXT format. Therefore, I calculated the data from 2003 to 2012 through SPSS by following the official PISA instructions and codes. However, the Pisa 2000 was not included in my project because its format is quite different from the later data (the three subjects: reading, math and science were split into three separate files), which makes it more difficult to use.
 
-Pisa Data is very heavy. For example, the Pisa 2022 student data contains 613,744 observations and 1,278 variables. Therefore, I first have done a basic cleaning on the 2003-2022 data. I referred to the learningtower cleaned the Pisa data to choose these important columns, but not all of these colunmns will necessarily be used in later research.
+Pisa Data is very heavy. For example, the Pisa 2022 student data contains 613,744 observations and 1,278 variables. Therefore, I first have done a basic cleaning on the 2003-2022 data. I referred to the learningtower cleaned the Pisa data to choose these important columns, but not all of these colunms will necessarily be used in later research.
 
 Next, because the Pisa data is at the individual level, while my research is at the country level, I have aggregated the Pisa data. I grouped the data by country for each year and used the student weights provided in the Pisa data set to summarize the students' reading, math, and science scores, along with the other necessary variables.
 
